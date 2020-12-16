@@ -1,26 +1,28 @@
 ﻿using BaseX;
 using FrooxEngine;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace NeosPluginManager
+namespace NeosPluginManager.Patches
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public static class PluginHooks
+    [HarmonyPatch(typeof(Session), "NewSession")]
+    public static class PatchNewSession
     {
         /// <summary>
         /// Hook for FrooxEngine.Session.NewSession(owner, port);
         /// Allows us to intervene and load plugins prior to starting 
         /// the requested world
         /// </summary>
+        /// <param name="__result">ReturnValue: Instance of Session that represents the newly created session</param>
         /// <param name="owner">World object to populate while starting the listen server</param>
         /// <param name="port">Port to use for the listen server</param>
-        /// <returns>Instance of Session that represents the newly created session</returns>
-        public static Session NewSessionHook(World owner, ushort port = 0)
+        /// <returns></returns>
+        static bool Prefix(ref Session __result, World owner, ushort port = 0)
         {
             UniLog.Log("Session.NewSession hooked");
             /*
@@ -80,13 +82,11 @@ namespace NeosPluginManager
                         Userspace.UserspaceWorld.GetGloballyRegisteredComponent<PluginNotifyWindow>().ShowWindow(requestedPlugins.Keys.ToList(),
                             successAction, failureAction);
                     });
-                    return session;
+                    __result = session;
+                    return false;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    UniLog.Log("Failed to load plugins: " + ex);
-                    owner.InitializationFailed(World.FailReason.JoinRejected, "Eror loading plugins");
-                    return session;
                 }
             }
 
@@ -96,22 +96,27 @@ namespace NeosPluginManager
              * Perform the normal operations expected in Session.NewSession
              * Construct a new Session object, and call Session.StartNew(port)
              */
-
             SessionConnectionStatusDescriptionProperty.SetValue(session, "World.Connection.PluginAuthorization");
             SessionStartNew.Invoke(session, new[] { (object)port });
             UniLog.Log("Session.NewSession Handled!");
-            return session;
+            __result = session;
+            return false;
         }
-
+    }
+    [HarmonyPatch(typeof(Session))]
+    [HarmonyPatch("JoinSession")]
+    public static class PatchJoinSession
+    {
         /// <summary>
         /// Hook for FrooxEngine.Session.JoinSession(owner, addresses);
         /// Allows us to intervene and load plugins prior to connecting to 
         /// the requested world
         /// </summary>
+        /// <param name="__result">ReturnValue: Instance of Session that represents the session being connected to</param>
         /// <param name="owner">World object to populate once connected</param>
-        /// <param name="addresses">List of possible session URIs to try using</param>
-        /// <returns>Instance of Session that represents the session being connected to</returns>
-        public static Session JoinSessionHook(World owner, IEnumerable<Uri> addresses)
+        /// <param name="addresses">List of possible session URIs to try connecting to</param>
+        /// <returns></returns>
+        static bool Prefix(ref Session __result, World owner, IEnumerable<Uri> addresses)
         {
             UniLog.Log("Session.JoinSession hooked");
             /*
@@ -163,13 +168,11 @@ namespace NeosPluginManager
                         Userspace.UserspaceWorld.GetGloballyRegisteredComponent<PluginNotifyWindow>().ShowWindow(requestedPlugins.Keys.ToList(),
                             successAction, failureAction);
                     });
-                    return session;
+                    __result = session;
+                    return false;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    UniLog.Log("Failed to load plugins: " + ex);
-                    owner.InitializationFailed(World.FailReason.JoinRejected, "Error loading plugins");
-                    return session;
                 }
             }
 
@@ -180,7 +183,8 @@ namespace NeosPluginManager
 
             SessionConnectTo.Invoke(session, new[] { addresses });
             UniLog.Log("Session.JoinSession Handled!");
-            return session;
+            __result = session;
+            return false;
         }
     }
 }

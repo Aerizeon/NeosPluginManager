@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Security.Cryptography;
 using BaseX;
 using CloudX.Shared;
@@ -20,8 +21,9 @@ namespace NeosPluginManager
         public static Dictionary<string, Assembly> LoadedPlugins = new Dictionary<string, Assembly>();
         public static Dictionary<string, List<Type>> ActivePluginTypes = new Dictionary<string, List<Type>>();
 
-        private readonly PlayHooky.HookManager hookManager = new PlayHooky.HookManager();
+        public static readonly HarmonyLib.Harmony HarmonyPatcher = new HarmonyLib.Harmony("com.aerizeon.neos.pluginmanager");
         private World lastFocusedWorld = null;
+
 
         /// <summary>
         /// Component initialized event
@@ -29,8 +31,8 @@ namespace NeosPluginManager
         protected override void OnAwake()
         {
             OverrideHash(Engine, NetworkVersion.Value);
-            hookManager.Hook(typeof(Session).GetMethod("JoinSession"), typeof(PluginHooks).GetMethod("JoinSessionHook"));
-            hookManager.Hook(typeof(Session).GetMethod("NewSession"), typeof(PluginHooks).GetMethod("NewSessionHook"));
+            HarmonyPatcher.PatchAll();
+
             Engine.Cloud.Status.WorldManager.WorldFocused += WorldManager_WorldFocused;
             Userspace.UserspaceWorld.RunSynchronously(() =>
             {
@@ -95,6 +97,7 @@ namespace NeosPluginManager
         public void BuildInspectorUI(UIBuilder ui)
         {
             WorkerInspector.BuildInspectorUI(this, ui);
+            
         }
 
         /// <summary>
@@ -185,7 +188,8 @@ namespace NeosPluginManager
                         if (Path.GetFullPath(PluginsBase + plugin.Key).StartsWith(PluginsBase))
                         {
                             UniLog.Log("Loading plugin from file: " + PluginsBase + plugin.Key);
-                            NeosAssemblyPostProcessor.Process(PluginsBase + plugin.Key, Path.GetFullPath("Neos_Data\\Managed"));
+
+                            PostX.NeosAssemblyPostProcessor.Process(PluginsBase + plugin.Key, Path.GetFullPath("Neos_Data\\Managed"));
                             pluginAssembly = Assembly.LoadFrom(PluginsBase + plugin.Key);
                             PluginManager.LoadedPlugins.Add(plugin.Key, pluginAssembly);
                             if (!ActivePluginTypes.TryGetValue(sessionId, out List<Type> pluginTypes))
