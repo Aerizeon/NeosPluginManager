@@ -31,10 +31,11 @@ namespace NeosPluginManager.Patches
              * SessionConstructor - The private constructor for Session objects
              * SessionStartNew - The private Session.StartNew(port) method, which is used to start the listen server.
              */
-            FieldInfo InitLoadField = typeof(World).GetField("worldInitLoad", BindingFlags.NonPublic | BindingFlags.Instance);
-            ConstructorInfo SessionConstructor = typeof(Session).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(World) }, null);
-            MethodInfo SessionStartNew = typeof(Session).GetMethod("StartNew", BindingFlags.NonPublic | BindingFlags.Instance);
-            PropertyInfo SessionConnectionStatusDescriptionProperty = typeof(Session).GetProperty("ConnectionStatusDescription");
+            
+            FieldInfo InitLoadField = AccessTools.Field(typeof(World), "worldInitLoad");
+            ConstructorInfo SessionConstructor = AccessTools.Constructor(typeof(Session), new[] { typeof(World) });
+            MethodInfo SessionStartNew = AccessTools.Method(typeof(Session), "StartNew");
+            PropertyInfo SessionConnectionStatusDescriptionProperty = AccessTools.Property(typeof(Session), "ConnectionStatusDescription");
 
             Session session = SessionConstructor.Invoke(new[] { owner }) as Session;
             /*
@@ -42,8 +43,8 @@ namespace NeosPluginManager.Patches
              * plugin loading information
              * Root > Configuration > WorldDescription > Data.LoadString()
              */
-            DataTreeNode initNode = (DataTreeNode)InitLoadField.GetValue(owner);
-            DataTreeDictionary initDict = initNode as DataTreeDictionary;
+
+            DataTreeDictionary initDict = InitLoadField.GetValue(owner) as DataTreeDictionary;
             DataTreeDictionary configDict = initDict.TryGetDictionary("Configuration");
             DataTreeNode descriptionDataNode = configDict.TryGetDictionary("WorldDescription").TryGetNode("Data");
             DataTreeNode sessionIdDataNode = configDict.TryGetNode("SessionID-ID");

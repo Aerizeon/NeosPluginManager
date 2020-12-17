@@ -64,6 +64,7 @@ namespace NeosPluginManager
             _pluginText.Target = windowUI.Text("Plugin information will go here");
             windowUI.PopStyle();
             windowUI.HorizontalLayout(10f, 5f, Alignment.MiddleCenter);
+            windowUI.Style.MinHeight = 30f;
             _continueButton.Target = windowUI.Button("OK", new ButtonEventHandler(Continue_Pressed));
             _cancelButton.Target = windowUI.Button("Cancel", new ButtonEventHandler(Cancel_Pressed));
             Slot.ActiveSelf = false;
@@ -84,7 +85,7 @@ namespace NeosPluginManager
         {
             _successCallback = success;
             _failureCallback = failure;
-            string pluginsString = string.Join(",\r\n", plugins);
+            string pluginsString = string.Join("\r\n", plugins);
             _pluginText.Target.Content.Value = $"The world you're trying to join requires the use of the following plugins:\r\n\r\n"
                 + $"<color=red><noparse={pluginsString.Length}>" + pluginsString + "</color>\r\n\r\nIf this is acceptable, press OK";
             Slot.ActiveSelf = true;
