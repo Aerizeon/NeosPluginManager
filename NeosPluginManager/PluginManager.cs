@@ -17,7 +17,7 @@ namespace NeosPluginManager
     [Category("Epsilion")]
     public class PluginManager : Component, ICustomInspector
     {
-        public readonly Sync<int> NetworkVersion;
+        //public readonly Sync<int> NetworkVersion;
         public readonly Sync<bool> AllowUseInVanillaWorlds;
 
         public static Dictionary<string, Assembly> LoadedPlugins = new Dictionary<string, Assembly>();
@@ -76,7 +76,9 @@ namespace NeosPluginManager
                                         if (opcode.operand is int version)
                                         {
                                             //Check if it's an int, and if so, assign it to NetworkVersion for use in OverrideHash below.
-                                            NetworkVersion.Value = version;
+                                            //NetworkVersion.Value = version;
+                                            //Override Neos' internal CompatabilityHash with the "correct" version
+                                            OverrideHash(Engine, version);
                                         }
                                     }
                                 }
@@ -90,8 +92,7 @@ namespace NeosPluginManager
                 UniLog.Log("Unable to determine Neos network version: " + ex);
             }
 
-            //Override Neos' internal CompatabilityHash with the "correct" version
-            OverrideHash(Engine, NetworkVersion.Value);
+            
 
             //Load all of our patches through harmony.
             HarmonyPatcher.PatchAll();
@@ -101,7 +102,8 @@ namespace NeosPluginManager
             {
                 Userspace.UserspaceWorld.AddSlot("Plugin Manager Notification").AttachComponent<PluginNotifyWindow>();
             });
-            NetworkVersion.OnValueChange += NetworkVersion_OnValueChange;
+            InjectPlugins(World.SessionId, new Dictionary<string, string>() { { "NeosButtplugManager.dll", "1.0.0.0" } });
+            //NetworkVersion.OnValueChange += NetworkVersion_OnValueChange;
         }
 
         /// <summary>
@@ -118,7 +120,7 @@ namespace NeosPluginManager
         /// </summary>
         protected override void OnAttach()
         {
-            NetworkVersion.Value = 698;
+            //NetworkVersion.Value = 698;
             AllowUseInVanillaWorlds.Value = true;
         }
 
